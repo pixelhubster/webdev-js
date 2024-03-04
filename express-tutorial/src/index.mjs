@@ -1,4 +1,5 @@
 import express from "express"
+import { query, validationResult, body, matchedData }  from "express-validator"
 
 const app = express()
 const PORT = process.env.PORT || 3000;
@@ -45,9 +46,10 @@ app.get("/", (request, response) => {
 })
 
 //get user data with filters /api/users 
-app.get("/api/users", (request, response) => {
+app.get("/api/users", query('filter').isString().notEmpty().isLength({min:3,max:10}).withMessage("Must be at least 3-10 characters"), (request, response) => {
     const { query: {filter, value}} = request;
-
+    const result = validationResult(request);
+    console.log(result)
     if (filter && value) return response.send(
         mockUsers.filter((user) => user[filter].includes(value))
     )
@@ -55,14 +57,28 @@ app.get("/api/users", (request, response) => {
 })
 
 //get product data /api/products
-app.get("/api/products", (request, response) => {
+app.get("/api/products",
+    (request, response) => {
     response.send([
         {id: 1, name: "Chicken", price: 12.99}
     ])
 })
 
 //post method
-app.post("/api/users",(request, response) => {
+app.post("/api/users",
+    body('username')
+        .notEmpty()
+        .withMessage("Username cannot be empty")
+        .isLength({min:5, max:32})
+        .withMessage("Username must be between 5-32 characters")
+        .isString()
+        .withMessage("Username can only be a string"),
+        (request, response) => {
+    const result = validationResult(request);
+    console.log(result);
+    if (!result.isEmpty()) return response.status(400).send({errors: result.array()})
+    const data = matchedData(request);
+    console.log(data);
     const { body } = request;
     const newUser = {
         id: mockUsers[mockUsers.length -1].id + 1,
